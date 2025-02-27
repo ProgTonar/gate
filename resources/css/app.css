@@ -1,3 +1,31 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+
+.container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 100vh;
+    gap: 20px;
+}
+
+.inputic {
+    border: 1px solid black;
+    border-radius: 4px;
+    padding: 5px 5px 5px 10px;
+}
+
+.subBtn {
+    padding: 10px 20px;
+    border-radius: 12px;
+    background-color: black;
+    color: white;
+}
+
+.linkReg {
+    text-decoration: underline;
+}

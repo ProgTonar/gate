@@ -2,73 +2,164 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\LoginRequest;
 use Illuminate\Database\QueryException;
-use Illuminate\Http\Request;
 use App\Models\User;
 use Exception;
 use GuzzleHttp\Client;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Validation\ValidationException;
+use App\Http\Requests\RegistrationRequest;
+use GuzzleHttp\Exception\RequestException;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Str;
+use Laravel\Passport\Client as PassportClient;
+use Symfony\Component\HttpFoundation\Exception\BadRequestException;
 
 class AuthController extends Controller
 {
-    public function register(Request $request)
+    public function registration(RegistrationRequest $request)
     {
         try{
-            $request->validate([
-                'name' => 'required|string|max:255',
-                'email' => 'required|string|email|max:255|unique:users',
-                'password' => 'required|string|min:6|confirmed',
-            ]);
 
             User::create([
-                'name' => $request->name,
-                'email' => $request->email,
-                'password' => bcrypt($request->password),
+                'last_name' => $request->last_name,
+                'first_name' => $request->first_name,
+                'middle_name' => $request->middle_name,
+                'email' => strtolower($request->email) ?? null,
+                'login' => strtolower($request->login),
+                'password' => Hash::make($request->password),
             ]);
 
-            return response()->json(['message' => 'Пользователь успешно создан'], 201);
-        }catch(ValidationException $e){
-            return response()->json(['message' => $e->getMessage()], 422);
+            return response()->json(['message' => 'Пользователь создан'], 201);
         }catch(QueryException $e) {
-            Log::error("Произошла ошибка c БД в \"AuthController\" функция \"register\":" . $e->getMessage());
-            return response()->json(['message' => 'Произошла ошибка, обратитесь в службу поддержки'], 500);
+            return response()->json($e->getMessage(), 500);
         } catch(Exception $e) {
-            Log::error("Произошла ошибка в \"AuthController\" функция \"register\":" . $e->getMessage());
-            return response()->json(['message' => 'Произошла ошибка, обратитесь в службу поддержки'], 500);
+            return response()->json($e->getMessage(), 500);
         }
     }
 
-    public function login(Request $request)
+    public function redirect(Request $request)
     {
-        try{
-            $request->validate([
-                'email' => 'required|string|email',
-                'password' => 'required|string',
-            ]);
+        $name = $request->input('name');
 
-            $http = new Client;
+        $client = PassportClient::where('name', $name)->first();
 
+        if(!$client) {
+            return redirect(config('app.url'))->with('Клиент не найден');
+        }
+
+        $state = Str::random(40);
+        $codeVerifier = Str::random(128);
+
+        $codeChallenge = strtr(rtrim(
+            base64_encode(hash('sha256', $codeVerifier, true))
+        , '='), '+/', '-_');
+
+        session()->put('state',$state);
+        session()->put('codeChallenge',$codeChallenge);
+        session()->put('codeVerifier',$codeVerifier);
+        session()->put('name',$client->name);
+
+        // Создаем query параметры для редиректа
+        $query = http_build_query([
+            'client_id' => $client->id,
+            'redirect_uri' => $client->redirect,
+            'response_type' => 'code',
+            'scope' => '',
+            'state' => $state,
+            'code_challenge' => $codeChallenge,
+            'code_challenge_method' => 'S256',
+            'prompt' => 'blind',
+        ]);
+
+        return redirect(config('app.url') . '/oauth/authorize?' . $query);
+    }
+
+    public function login(LoginRequest $request)
+    {
+        try {
+            $user = User::where('email', $request->login)->orWhere('login', $request->login)->first();
+
+            if (!$user || !Hash::check($request->password, $user->password)) {
+                return response()->json(['message' => 'Неверные учетные данные'], 401);
+            }
+
+            $field = filter_var($request->login, FILTER_VALIDATE_EMAIL) ? 'email' : 'login';
+            $credentials = [
+                $field => $request->login,
+                'password' => $request->password,
+            ];
+
+            if (!Auth::attempt($credentials)) {
+                return response()->json(['message' => 'Неверные учетные данные'], 401);
+            }
+
+            $link = $this->localRedirect();
+
+            return response()->json(['link' => $link]);
+        } catch (Exception $e) {
+            return response()->json(['message' => $e->getMessage()], 500);
+        }
+    }
+
+    public function localRedirect()
+    {
+        $state = session()->get('state');
+        $codeChallenge = session()->get('codeChallenge');
+        $name = session()->get('name');
+
+        $client = PassportClient::where('name', $name)->first();
+
+        if (!$client) {
+            return response()->json(['error' => 'Клиент не найден'], 404);
+        }
+        $query = http_build_query([
+            'client_id' => $client->id,
+            'redirect_uri' => $client->redirect,
+            'response_type' => 'code',
+            'scope' => '',
+            'state' => $state,
+            'code_challenge' => $codeChallenge,
+            'code_challenge_method' => 'S256',
+            'prompt' => 'blind',
+        ]);
+        $authorizationUrl = config('app.url') . '/oauth/authorize?' . $query;
+
+        return $authorizationUrl;
+    }
+
+    public function callback(Request $request)
+    {
+        $code = $request->input('code');
+        $codeVerifier = session()->pull('codeVerifier');
+        $name = session()->pull('name');
+
+        $client = PassportClient::where('name', $name)->first();
+        if (!$client) {
+            return response()->json(['error' => 'Клиент не найден'], 404);
+        }
+
+        try {
+            $http = new Client();
             $response = $http->post(config('app.url') . '/oauth/token', [
                 'form_params' => [
-                    'grant_type' => 'password',
-                    'client_id' => config('services.passport.client_id'),
-                    'client_secret' => config('services.passport.client_secret'),
-                    'username' => $request->email,
-                    'password' => $request->password,
-                    'scope' => '',
+                    'grant_type' => 'authorization_code',
+                    'client_id' => $client->id,
+                    'redirect_uri' => $client->redirect,
+                    'code_verifier' => $codeVerifier,
+                    'code' => $code,
                 ],
             ]);
 
-            return json_decode((string) $response->getBody(), true);
-        }catch(ValidationException $e){
-            return response()->json(['message' => $e->getMessage()], 422);
-        }catch(QueryException $e) {
-            Log::error("Произошла ошибка c БД в \"AuthController\" функция \"login\":" . $e->getMessage());
-            return response()->json(['message' => 'Произошла ошибка, обратитесь в службу поддержки'], 500);
-        } catch(Exception $e) {
-            Log::error("Произошла ошибка в \"AuthController\" функция \"login\":" . $e->getMessage());
-            return response()->json(['message' => 'Произошла ошибка, обратитесь в службу поддержки'], 500);
+            $responseData = json_decode((string) $response->getBody(), true);
+
+            return response()->json($responseData);
+        } catch (Exception $e) {
+            return response()->json(['error' => 'Ошибка авторизации: ' . $e->getMessage()], 500);
         }
     }
 }

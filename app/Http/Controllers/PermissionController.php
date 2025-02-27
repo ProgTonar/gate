@@ -31,7 +31,7 @@ class PermissionController extends Controller
 
             return response()->json(['message' => 'Роль создана']);
         }catch(ValidationException $e){
-            return response()->json(['message' => $e->getMessage()], 422);
+            return response()->json(['message' => $e->errors()], 422);
         }catch(QueryException $e) {
             Log::error("Произошла ошибка c БД в \"PermissionController\" функция \"createRole\":" . $e->getMessage());
             return response()->json(['message' => 'Произошла ошибка, обратитесь в службу поддержки'], 500);
@@ -59,7 +59,7 @@ class PermissionController extends Controller
 
             return response()->json(['message' => 'Роль удалена'], 200);
         }catch(ValidationException $e){
-            return response()->json(['message' => $e->getMessage()], 422);
+            return response()->json(['message' => $e->errors()], 422);
         }catch(QueryException $e) {
             Log::error("Произошла ошибка c БД в \"PermissionController\" функция \"deleteRole\":" . $e->getMessage());
             return response()->json(['message' => 'Произошла ошибка, обратитесь в службу поддержки'], 500);
@@ -94,7 +94,7 @@ class PermissionController extends Controller
 
             return response()->json(['message' => 'Роль присвоена'], 200);
         }catch(ValidationException $e){
-            return response()->json(['message' => $e->getMessage()], 422);
+            return response()->json(['message' => $e->errors()], 422);
         }catch(QueryException $e) {
             Log::error("Произошла ошибка c БД в \"PermissionController\" функция \"syncRole\":" . $e->getMessage());
             return response()->json(['message' => 'Произошла ошибка, обратитесь в службу поддержки'], 500);
@@ -115,7 +115,7 @@ class PermissionController extends Controller
 
             return response()->json(['message' => 'Разрешение создано'], 200);
         }catch(ValidationException $e){
-            return response()->json(['message' => $e->getMessage()], 422);
+            return response()->json(['message' => $e->errors()], 422);
         }catch(QueryException $e) {
             Log::error("Произошла ошибка c БД в \"PermissionController\" функция \"createPermission\":" . $e->getMessage());
             return response()->json(['message' => 'Произошла ошибка, обратитесь в службу поддержки'], 500);
@@ -142,7 +142,7 @@ class PermissionController extends Controller
 
             return response()->json(['message' => 'Разрешение удалено'], 200);
         }catch(ValidationException $e){
-            return response()->json(['message' => $e->getMessage()], 422);
+            return response()->json(['message' => $e->errors()], 422);
         }catch(QueryException $e) {
             Log::error("Произошла ошибка c БД в \"PermissionController\" функция \"deletePermission\":" . $e->getMessage());
             return response()->json(['message' => 'Произошла ошибка, обратитесь в службу поддержки'], 500);
@@ -179,7 +179,7 @@ class PermissionController extends Controller
 
             return response()->json(['message' => 'Разрешение присвоено роли'], 200);
         }catch(ValidationException $e){
-            return response()->json(['message' => $e->getMessage()], 422);
+            return response()->json(['message' => $e->errors()], 422);
         }catch(QueryException $e) {
             Log::error("Произошла ошибка c БД в \"PermissionController\" функция \"syncPermission\":" . $e->getMessage());
             return response()->json(['message' => 'Произошла ошибка, обратитесь в службу поддержки'], 500);

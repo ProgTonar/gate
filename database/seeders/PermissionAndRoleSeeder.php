@@ -12,9 +12,9 @@ class PermissionAndRoleSeeder extends Seeder
     public function run(): void
     {
         $permissions = [
+            'admin',
             'my_tonar',
-            'logistics_management',
-            'permission_manipulation'
+            'mts',
         ];
 
         foreach ($permissions as $permission) {
@@ -24,10 +24,10 @@ class PermissionAndRoleSeeder extends Seeder
         // Создание ролей
         $roles = [
             'admin' => [
-                'permissions' => ['my_tonar', 'logistics_management', 'permission_manipulation'],
+                'permissions' => ['my_tonar', 'mts', 'admin'],
             ],
             'management' => [
-                'permissions' => ['my_tonar', 'logistics_management'],
+                'permissions' => ['my_tonar', 'mts'],
             ],
             'user' => [
                 'permissions' => ['my_tonar'],
