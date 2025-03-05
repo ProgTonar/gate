@@ -48,11 +48,12 @@
                     throw new Error('Ошибка при отправке данных');
                 }
                 return response.json();
-                console.log('Ответ сервера:', result);
+                console.log('Ответ сервера:', result.url);
+                window.location.href = result.url;
             })
             .then(result => {
                 console.log('Ответ сервера:', result);
-                window.location.href = result.link;
+                window.location.href = result.url;
             })
             .catch(error => {
                 console.error('Ошибка:', error);

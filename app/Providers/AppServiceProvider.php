@@ -3,8 +3,7 @@
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
-use Illuminate\Contracts\Auth\StatefulGuard;
-use Illuminate\Support\Facades\Auth;
+use Laravel\Passport\Passport;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -15,6 +14,6 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-
+        Passport::enablePasswordGrant();
     }
 }
