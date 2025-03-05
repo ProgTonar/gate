@@ -48,118 +48,42 @@ class AuthController extends Controller
 
         $client = PassportClient::where('name', $name)->first();
 
-        if(!$client) {
-            return redirect(config('app.url'))->with('Клиент не найден');
+        if($client) {
+            session()->put('redirect', $client->redirect);
+            Log::info('Добавляем в сессию: ' . $client->redirect);
         }
 
-        $state = Str::random(40);
-        $codeVerifier = Str::random(128);
-
-        $codeChallenge = strtr(rtrim(
-            base64_encode(hash('sha256', $codeVerifier, true))
-        , '='), '+/', '-_');
-
-        session()->put('state',$state);
-        session()->put('codeChallenge',$codeChallenge);
-        session()->put('codeVerifier',$codeVerifier);
-        session()->put('name',$client->name);
-
-        // Создаем query параметры для редиректа
-        $query = http_build_query([
-            'client_id' => $client->id,
-            'redirect_uri' => $client->redirect,
-            'response_type' => 'code',
-            'scope' => '',
-            'state' => $state,
-            'code_challenge' => $codeChallenge,
-            'code_challenge_method' => 'S256',
-            'prompt' => 'blind',
-        ]);
-
-        return redirect(config('app.url') . '/oauth/authorize?' . $query);
+        return redirect(route('index'));
     }
 
     public function login(LoginRequest $request)
     {
         try {
-            $user = User::where('email', $request->login)->orWhere('login', $request->login)->first();
 
-            if (!$user || !Hash::check($request->password, $user->password)) {
-                return response()->json(['message' => 'Неверные учетные данные'], 401);
-            }
+            $url = session()->pull('redirect');
 
-            $field = filter_var($request->login, FILTER_VALIDATE_EMAIL) ? 'email' : 'login';
-            $credentials = [
-                $field => $request->login,
-                'password' => $request->password,
-            ];
-
-            if (!Auth::attempt($credentials)) {
-                return response()->json(['message' => 'Неверные учетные данные'], 401);
-            }
-
-            $link = $this->localRedirect();
-
-            return response()->json(['link' => $link]);
-        } catch (Exception $e) {
-            return response()->json(['message' => $e->getMessage()], 500);
-        }
-    }
-
-    public function localRedirect()
-    {
-        $state = session()->get('state');
-        $codeChallenge = session()->get('codeChallenge');
-        $name = session()->get('name');
-
-        $client = PassportClient::where('name', $name)->first();
-
-        if (!$client) {
-            return response()->json(['error' => 'Клиент не найден'], 404);
-        }
-        $query = http_build_query([
-            'client_id' => $client->id,
-            'redirect_uri' => $client->redirect,
-            'response_type' => 'code',
-            'scope' => '',
-            'state' => $state,
-            'code_challenge' => $codeChallenge,
-            'code_challenge_method' => 'S256',
-            'prompt' => 'blind',
-        ]);
-        $authorizationUrl = config('app.url') . '/oauth/authorize?' . $query;
-
-        return $authorizationUrl;
-    }
-
-    public function callback(Request $request)
-    {
-        $code = $request->input('code');
-        $codeVerifier = session()->pull('codeVerifier');
-        $name = session()->pull('name');
-
-        $client = PassportClient::where('name', $name)->first();
-        if (!$client) {
-            return response()->json(['error' => 'Клиент не найден'], 404);
-        }
-
-        try {
             $http = new Client();
+
             $response = $http->post(config('app.url') . '/oauth/token', [
                 'form_params' => [
-                    'grant_type' => 'authorization_code',
-                    'client_id' => $client->id,
-                    'redirect_uri' => $client->redirect,
-                    'code_verifier' => $codeVerifier,
-                    'code' => $code,
-                ],
+                    'grant_type' => 'password',
+                    'client_id' => config('app.client_id'),
+                    'client_secret' => config('app.client_secret'),
+                    'username' => $request->login,
+                    'password' => $request->password,
+                    'scope' => '',
+                ]
             ]);
 
-            $responseData = json_decode((string) $response->getBody(), true);
+            $data = json_decode($response->getBody(), true);
 
-            return response()->json($responseData);
+            $tokens = http_build_query($data);
+
+            $fullLink = $url . '?' . $tokens;
+
+            return response()->json(['url' => $fullLink]);
         } catch (Exception $e) {
-            return response()->json(['error' => 'Ошибка авторизации: ' . $e->getMessage()], 500);
+            return response()->json(['message' => $e->getMessage()], 500);
         }
     }
 }
