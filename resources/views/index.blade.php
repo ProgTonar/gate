@@ -49,11 +49,11 @@
                 }
                 return response.json();
                 console.log('Ответ сервера:', result.url);
-                window.location.href = result.url;
+                // window.location.href = result.url;
             })
             .then(result => {
                 console.log('Ответ сервера:', result);
-                window.location.href = result.url;
+                // window.location.href = result.url;
             })
             .catch(error => {
                 console.error('Ошибка:', error);

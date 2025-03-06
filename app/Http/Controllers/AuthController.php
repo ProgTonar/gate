@@ -10,6 +10,7 @@ use GuzzleHttp\Client;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use App\Http\Requests\RegistrationRequest;
+use GuzzleHttp\Exception\BadResponseException;
 use GuzzleHttp\Exception\RequestException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -82,6 +83,8 @@ class AuthController extends Controller
             $fullLink = $url . '?' . $tokens;
 
             return response()->json(['url' => $fullLink]);
+        }catch(BadResponseException $e){
+            return response()->json(['message' => $e->getMessage()], $e->getCode());
         } catch (Exception $e) {
             return response()->json(['message' => $e->getMessage()], 500);
         }
