@@ -21,5 +21,9 @@ class CreateFirstUser extends Seeder
             'active' => true,
             'password' => Hash::make('test1234'),
         ]);
+
+        $role = Role::where('name', 'admin')->first();
+
+        $user->assignRole($role);
     }
 }
