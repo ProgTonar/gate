@@ -47,11 +47,13 @@ class AuthController extends Controller
     {
         $name = $request->input('name');
 
+        Log::info('redirect(получаем): ' . $name);
+
         $client = PassportClient::where('name', $name)->first();
 
         if($client) {
             session()->put('redirect', $client->redirect);
-            Log::info('Добавляем в сессию: ' . $client->redirect);
+            Log::info('redirect(достаем урл): ' . $client->redirect);
         }
 
         return redirect(route('index'));
@@ -62,6 +64,8 @@ class AuthController extends Controller
         try {
 
             $url = session()->pull('redirect');
+
+            Log::info('Login(получаем урл): ' . $url);
 
             $http = new Client();
 
