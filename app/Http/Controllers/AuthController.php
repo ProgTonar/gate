@@ -68,8 +68,8 @@ class AuthController extends Controller
             Log::info('Login(получаем урл): ' . $url);
             Log::info('Login(айди): ' . config('app.client_id'));
             Log::info('Login(айди): ' . config('app.client_secret'));
-            Log::info('Login(айди): ' . $request->login);
-            Log::info('Login(айди): ' . $request->password);
+            Log::info('Login(логин): ' . $request->login);
+            Log::info('Login(пароль): ' . $request->password);
 
             $http = new Client();
 
