@@ -20,6 +20,7 @@ class CreateFirstUser extends Seeder
             'email' => 'uchevatkin.a@tonar.info',
             'active' => true,
             'password' => Hash::make('test1234'),
+            'user_type_id' => 2
         ]);
 
         $role = Role::where('name', 'admin')->first();

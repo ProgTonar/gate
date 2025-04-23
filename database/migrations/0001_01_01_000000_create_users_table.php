@@ -13,7 +13,6 @@ return new class extends Migration
     {
         Schema::create('users', function (Blueprint $table) {
             $table->id();
-            $table->timestamps();
             $table->string('last_name');
             $table->string('first_name');
             $table->string('middle_name')->nullable();
@@ -24,6 +23,8 @@ return new class extends Migration
             $table->string('password');
             $table->rememberToken();
             $table->boolean('active')->default(false);
+            $table->unsignedBigInteger('user_type_id')->default(2);
+            $table->timestamps();
         });
 
         Schema::create('password_reset_tokens', function (Blueprint $table) {

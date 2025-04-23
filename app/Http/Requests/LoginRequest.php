@@ -9,11 +9,16 @@ use Illuminate\Validation\Rule;
 
 class LoginRequest extends FormRequest
 {
-    public function rules(): array
+    public function authorize()
+    {
+        return true;
+    }
+
+    public function rules()
     {
         return [
-            'login' => 'required|string|min:1|max:255',
-            'password' => 'required|string|min:1|max:255',
+            'login' => 'required|string',
+            'password' => 'required|string',
         ];
     }
 

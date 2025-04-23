@@ -3,22 +3,26 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Foundation\Auth\User as Authenticatable;
-use Illuminate\Notifications\Notifiable;
+use App\Models\UserType;
 use Laravel\Passport\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
+use Illuminate\Notifications\Notifiable;
+use Illuminate\Foundation\Auth\Access\Authorizable;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Foundation\Auth\User as Authenticatable;
 
 class User extends Authenticatable
 {
-    use HasApiTokens, HasRoles, HasFactory, Notifiable;
+    use HasApiTokens, HasRoles, HasFactory, Notifiable, Authorizable;
 
     public function findForPassport($username)
     {
-        return $this->where('login', strtolower($username))
+
+        $user = $this->where('login', strtolower($username))
             ->orWhere('email', strtolower($username))
-            ->first()
-        ;
+            ->first();
+
+        return $user;
     }
 
     protected $fillable = [
@@ -38,4 +42,10 @@ class User extends Authenticatable
         'password',
         'remember_token',
     ];
+
+
+    public function userType()
+{
+    return $this->belongsTo(UserType::class, 'user_type_id');
+}
 }

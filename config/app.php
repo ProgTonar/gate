@@ -54,8 +54,8 @@ return [
 
     'url' => env('APP_URL', 'http://localhost'),
 
-    'client_id' => env('PASSPORT_CLIENT_ID'),
-    'client_secret' => env('PASSPORT_CLIENT_SECRET'),
+    'client_id' => env('CLIENT_ID'),
+    'client_secret' => env('CLIENT_SECRET'),
 
     /*
     |--------------------------------------------------------------------------
